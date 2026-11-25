@@ -30,7 +30,7 @@ test('sidebar keeps the left group whole', () => {
   const { freeLeft, o } = layout(1440, 900, 300, 0)
   assert.equal(o.oL, Math.round(freeLeft) - 24)
   const start = Math.round(freeLeft)
-  assert.deepEqual(span(start, start + 75).map(x => sourceColumn(x, o)), span(LEFT[0], LEFT[1]))
+  assert.deepEqual(span(start, start + 74).map(x => sourceColumn(x, o)), span(LEFT[0], LEFT[1]))
   const mapped = new Set(span(start, 456).map(x => sourceColumn(x, o)))
   for (const c of span(CENTER[0], CENTER[1])) assert.ok(mapped.has(c), `center column ${c}`)
   for (const c of span(RIGHT[0], RIGHT[1])) assert.ok(mapped.has(c), `right column ${c}`)
@@ -60,7 +60,7 @@ test('seams repeat', () => {
   for (const x of span(from, to)) {
     const s = sourceColumn(x, o)
     assert.ok(s >= SEAM_L[0] && s < SEAM_L[1], `column ${x} maps into the left seam`)
-    assert.equal(s, SEAM_L[0] + ((x - from) % 91))
+    assert.equal(s, SEAM_L[0] + ((x - from) % 92))
   }
 })
 

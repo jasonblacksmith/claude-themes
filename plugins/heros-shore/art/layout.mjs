@@ -6,11 +6,22 @@
 // Ranges are half-open [start, end) scene columns of the 480x270 scene.
 
 export const VISIBLE = [24, 456] // the columns a 16:10 window shows; groups live inside
-export const LEFT = [24, 99]
-export const SEAM_L = [99, 190]
+export const LEFT = [24, 98]
+export const SEAM_L = [98, 190]
 export const CENTER = [190, 290]
-export const SEAM_R = [290, 381]
-export const RIGHT = [381, 456]
+export const SEAM_R = [290, 382]
+export const RIGHT = [382, 456]
+
+// Where the shader's effects attach, in scene cells. gen.mjs draws the art at these anchors.
+export const EFFECTS = {
+  fire: [398, 240], // the campfire's flames
+  crystal: [84, 84], // the floating crystal's heart
+  heroBox: [190, 160, 290, 232], // hero, sword, scarf and slime: never rippled
+  signBox: [382, 70, 456, 270], // the right group's foreground (sign, mushroom, guitars): never rippled
+  seaTop: 151,
+  seaBottom: 211,
+  sunX: 240, // the glitter path's center
+}
 
 const W = 480
 const H = 270
