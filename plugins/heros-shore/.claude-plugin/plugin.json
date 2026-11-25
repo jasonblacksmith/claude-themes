@@ -1,7 +1,7 @@
 {
   "name": "heros-shore",
-  "version": "0.1.0",
-  "description": "A 32-bit JRPG coast: a hero with a crystal sword, a slime, a floating castle, a cliffside fortress and a campfire, at golden hour or by moonlight.",
+  "version": "0.2.0",
+  "description": "A 32-bit JRPG coast: a hero with a crystal sword, a slime, a floating castle, a cliffside fortress and a campfire, at golden hour or by moonlight, with a rippling sea, glints that follow your pointer, and firelight played on the GPU.",
   "author": { "name": "jasonblacksmith" },
   "license": "MIT"
 }
