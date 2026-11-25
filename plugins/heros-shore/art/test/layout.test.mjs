@@ -163,3 +163,23 @@ test('split view centers the hero group on the divider', () => {
   assert.ok(Math.abs((CENTER[0] + CENTER[1]) / 2 + o.oC - dividerCol) <= 1, `center at ${(CENTER[0] + CENTER[1]) / 2 + o.oC}, divider ${dividerCol}`)
   assert.ok(o.oL > 0, 'left group pushed out from under the sidebar')
 })
+
+// Final review findings
+test('a plain narrow window is not split view', () => {
+  for (const w of [945, 960]) {
+    const half = Math.min(646, w - 48) / 2
+    assert.equal(estimatePanels(w / 2 - half, w / 2 + half, w).dividerPx, 0, `${w} px window`)
+  }
+  const [bl, br] = box(1440, 0, 235)
+  assert.equal(estimatePanels(bl, br, 1440).dividerPx, 0, 'a 235 px pane on a 1440 px window')
+})
+
+test('near-square windows never sample past the picture', () => {
+  for (const [l, r] of [[315, 0], [0, 400], [315, 235]]) {
+    const { pictureLeft, pictureRight, o } = layout(960, 1040, l, r)
+    for (const x of span(Math.ceil(pictureLeft), Math.floor(pictureRight))) {
+      const s = sourceColumn(x, o)
+      assert.ok(s >= Math.ceil(pictureLeft) && s < Math.floor(pictureRight), `panels ${l}/${r}: column ${x} samples ${s}`)
+    }
+  }
+})

@@ -73,3 +73,9 @@ test('the left group never ripples', () => {
   assert.ok(EFFECTS.deskBox, 'EFFECTS.deskBox exists')
   for (const name of ['computer', 'toys']) assert.ok(inside(part(name).box, EFFECTS.deskBox), `${name} ${part(name).box} inside the desk box ${EFFECTS.deskBox}`)
 })
+
+test('the sun and moon path stays free to ripple', () => {
+  const [x0, y0, x1, y1] = EFFECTS.heroBox
+  const blocked = (x, y) => x >= x0 && x < x1 && y >= y0 && y < y1
+  for (let y = EFFECTS.seaTop + 1; y < 175; y++) assert.ok(!blocked(EFFECTS.sunX, y), `sun path row ${y} is masked`)
+})

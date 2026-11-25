@@ -16,7 +16,7 @@ export const RIGHT = [382, 456]
 export const EFFECTS = {
   fire: [398, 240], // the campfire's flames
   crystal: [84, 84], // the floating crystal's heart
-  heroBox: [190, 160, 290, 232], // hero, sword, scarf and slime: never rippled
+  heroBox: [190, 179, 281, 228], // hero, sword, scarf and slime (and no more, so the sun path ripples): never rippled
   signBox: [382, 70, 456, 270], // the right group's foreground (sign, mushroom, guitars): never rippled
   deskBox: [24, 150, 98, 270], // the left group's foreground (computer, d20, toys): never rippled
   seaTop: 151,
@@ -49,6 +49,9 @@ export const CENTERED_PX = 8
 // so it doesn't matter which conversation the backdrop follows. dividerPx is then the line
 // between the panes (0 when not split).
 export const SPLIT_TOLERANCE_PX = 12
+// A split pane must hold the box with at least this much room on each side, which rules out
+// narrow windows and narrow right panes that happen to fit the split arithmetic.
+export const SPLIT_MIN_MARGIN_PX = 40
 
 export function estimatePanels(boxLeftPx, boxRightPx, windowPx) {
   const none = { leftPx: 0, rightPx: 0, dividerPx: 0 }
@@ -57,7 +60,7 @@ export function estimatePanels(boxLeftPx, boxRightPx, windowPx) {
   const center = (boxLeftPx + boxRightPx) / 2
   for (const s of [(4 * center - windowPx) / 3, 4 * center - 3 * windowPx]) {
     const sidebarPx = Math.abs(s) <= SPLIT_TOLERANCE_PX ? 0 : Math.abs(s - sidebar) <= SPLIT_TOLERANCE_PX ? s : -1
-    if (sidebarPx >= 0) return { leftPx: sidebarPx, rightPx: 0, dividerPx: sidebarPx + (windowPx - sidebarPx) / 2 }
+    if (sidebarPx >= 0 && (windowPx - sidebarPx) / 2 >= boxRightPx - boxLeftPx + 2 * SPLIT_MIN_MARGIN_PX) return { leftPx: sidebarPx, rightPx: 0, dividerPx: sidebarPx + (windowPx - sidebarPx) / 2 }
   }
   const d = boxLeftPx + boxRightPx - windowPx
   if (Math.abs(d) <= CENTERED_PX) return none
@@ -89,16 +92,28 @@ export function placeGroups(freeLeft, freeRight, pictureLeft = VISIBLE[0], pictu
   const rStart = RIGHT[0] + oR
   const oC = dividerCol > 0 ? Math.round(dividerCol - MID)
     : rStart - lEnd >= CENTER[1] - CENTER[0] ? Math.round((lEnd + rStart) / 2 - MID) : Math.round((freeLeft + freeRight) / 2 - MID)
-  return { oL, oC, oR, leftEdge, rightEdge }
+  return { oL, oC, oR, leftEdge, rightEdge, pictureLeftCol: Math.ceil(pictureLeft), pictureRightCol: Math.floor(pictureRight) }
 }
 
 // The scene column to sample for display column x: the center first, then the outer groups
 // (with their bleed while they sit at the window's edge; open sea beyond them once a panel
 // pushes them in), then the seams, repeated from the edge of the group before them.
-export function sourceColumn(x, { oL, oC, oR, leftEdge = LEFT[0], rightEdge = RIGHT[1] }) {
+export function sourceColumn(x, o) {
+  return insidePicture(pickColumn(x, o), o)
+}
+
+function pickColumn(x, { oL, oC, oR, leftEdge = LEFT[0], rightEdge = RIGHT[1] }) {
   if (x >= CENTER[0] + oC && x < CENTER[1] + oC) return x - oC
   if (x < LEFT[1] + oL) return oL > 0 && x < leftEdge + oL ? SEAM_L[0] + mod(x - (LEFT[1] + oL), SEAM_L[1] - SEAM_L[0]) : x - oL
   if (x >= RIGHT[0] + oR) return oR < 0 && x >= rightEdge + oR ? SEAM_R[0] + mod(x - (CENTER[1] + oC), SEAM_R[1] - SEAM_R[0]) : x - oR
   if (x < CENTER[0] + oC) return SEAM_L[0] + mod(x - (LEFT[1] + oL), SEAM_L[1] - SEAM_L[0])
   return SEAM_R[0] + mod(x - (CENTER[1] + oC), SEAM_R[1] - SEAM_R[0])
+}
+
+// On near-square windows the picture holds fewer columns than the seams; a column past its edge
+// (always under a panel) folds back inside by whole steps of 4, which keeps the dither in phase.
+function insidePicture(s, { pictureLeftCol = 0, pictureRightCol = W }) {
+  if (s < pictureLeftCol) return s + 4 * Math.ceil((pictureLeftCol - s) / 4)
+  if (s >= pictureRightCol) return s - 4 * Math.ceil((s - pictureRightCol + 1) / 4)
+  return s
 }

@@ -34,9 +34,9 @@ const FIRE_Y = 240
 const CRYSTAL_X = 84
 const CRYSTAL_Y = 84
 const HERO_X0 = 190
-const HERO_Y0 = 160
-const HERO_X1 = 290
-const HERO_Y1 = 232
+const HERO_Y0 = 179
+const HERO_X1 = 281
+const HERO_Y1 = 228
 const SIGN_X0 = 382
 const SIGN_Y0 = 70
 const SIGN_X1 = 456
@@ -52,6 +52,7 @@ const SUN_X = 240
 const SIDEBAR_PER_BOX = 0.4876161
 const CENTERED_PX = 8
 const SPLIT_TOLERANCE_PX = 12
+const SPLIT_MIN_MARGIN_PX = 40
 
 // Where scene cell q sits in the Svg's own picture, as 0..1 of the window ("xMidYMid slice").
 const uvAt = (q: vec2) => {
@@ -94,7 +95,9 @@ const shore = picture(p => {
   const sB = 4 * boxMid - 3 * size.x
   const fitA = abs(sA) <= SPLIT_TOLERANCE_PX ? 0 : abs(sA - sidebar) <= SPLIT_TOLERANCE_PX ? sA : -1
   const fitB = abs(sB) <= SPLIT_TOLERANCE_PX ? 0 : abs(sB - sidebar) <= SPLIT_TOLERANCE_PX ? sB : -1
-  const splitS = boxR > boxL ? (fitA >= 0 ? fitA : fitB) : -1
+  const fitS = boxR > boxL ? (fitA >= 0 ? fitA : fitB) : -1
+  // a split pane must hold the box with room to spare, or it is a narrow window or right pane
+  const splitS = fitS >= 0 && (size.x - fitS) / 2 >= boxR - boxL + 2 * SPLIT_MIN_MARGIN_PX ? fitS : -1
   const centered = d <= CENTERED_PX && d >= -CENTERED_PX ? 1 : 0
   const leftPx = splitS >= 0 ? splitS : centered > 0.5 ? 0 : d >= 0.85 * sidebar ? min(d, size.x) : d > 0 ? sidebar : 0
   const rightPx = splitS >= 0 ? 0 : centered > 0.5 ? 0 : d >= 0.85 * sidebar ? 0 : d > 0 ? sidebar - d : min(-d, size.x)
@@ -130,6 +133,15 @@ const shore = picture(p => {
     src = SL0 + mod(x - lEnd, SL1 - SL0)
   } else {
     src = SR0 + mod(x - (C1 + oC), SR1 - SR0)
+  }
+  // a column past the picture's edge (only under a panel on near-square windows) folds back
+  // inside by whole steps of 4, keeping the dither in phase
+  const picL = -floor(-pictureLeft)
+  const picR = floor(pictureRight)
+  if (src < picL) {
+    src = src + 4 * -floor(-(picL - src) / 4)
+  } else if (src >= picR) {
+    src = src - 4 * -floor(-(src - picR + 1) / 4)
   }
   const cell = vec2(src + 0.5, y + 0.5)
 
