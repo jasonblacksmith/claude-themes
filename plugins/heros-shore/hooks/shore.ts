@@ -12,7 +12,7 @@
 //
 // Performance: every scene lookup's position is computed from built-ins (composer, size), never
 // from a buffer read; a buffer-dependent lookup costs the scene its full sharpness.
-import { buffer, clamp, composer, dot, exp, floor, fract, max, min, mix, mod, picture, pointer, pointerCount, pow, scene, shader, sin, size, smoothstep, step, still, time, values, vec2, vec3, vec4 } from 'claude-code/shader'
+import { buffer, clamp, composer, dot, exp, floor, fract, max, min, mix, mod, picture, pointer, pointerCount, pow, scene, shader, sin, size, smoothstep, step, still, time, vec2, vec3, vec4 } from 'claude-code/shader'
 import type { Buffer } from 'claude-code/shader'
 
 const W = 480
@@ -52,19 +52,21 @@ const SUN_X = 240
 const SIDEBAR_PER_BOX = 0.4876161
 const CENTERED_PX = 8
 
-// Set by the mod: 1 while /shore-layout shows the layout view.
-const debug = values({ debug: [0, 1] })
-
 // Where scene cell q sits in the Svg's own picture, as 0..1 of the window ("xMidYMid slice").
 const uvAt = (q: vec2) => {
   const sC = max(size.x / W, size.y / H)
   return vec2(((q.x - W / 2) * sC + size.x / 2) / size.x, (size.y / 2 - (q.y - H / 2) * sC) / size.y)
 }
 
-// Read once a frame instead of per pixel: how bright the sky is (1 by day, 0 by night).
+// Read once a frame instead of per pixel: how bright the sky is (1 by day, 0 by night), the
+// fire's flicker and the crystal's breath. These set colors only, never where the scene is
+// sampled, so reading them costs no sharpness.
 const state: Buffer = buffer({ size: [1, 1], float: 16 }, () => {
   const sky = scene.sample(uvAt(vec2(240.5, 12.5)))
-  return vec4(clamp(((sky.r + sky.g + sky.b) / 3) * 2.2, 0, 1), 0, 0, 1)
+  const t = time * (1 - still)
+  const flick = 0.78 + 0.22 * sin(t * 9) * sin(t * 5.3 + 1)
+  const breath = 0.6 + 0.4 * sin(t * 1.3)
+  return vec4(clamp(((sky.r + sky.g + sky.b) / 3) * 2.2, 0, 1), flick, breath, 1)
 })
 
 const shore = picture(p => {
@@ -121,7 +123,8 @@ const shore = picture(p => {
   const cell = vec2(src + 0.5, y + 0.5)
 
   const t = time * (1 - still)
-  const day = state.at(vec2(0, 0)).x
+  const frameState = state.at(vec2(0, 0))
+  const day = frameState.x
   const water = (c: vec4) => step(c.r + 0.06, c.b) * step(0.2, c.b)
 
   let base = scene.sample(toUv(cell))
@@ -143,11 +146,15 @@ const shore = picture(p => {
     mode = 1
     // glints: rare twinkling cells, crowded along the sun/moon path and under the pointer
     const h1 = fract(sin(src * 12.9898 + y * 78.233) * 43758.5453)
-    const h2 = fract(sin(src * 39.3468 + y * 11.135) * 24634.6345)
-    const path = exp(-pow((x - (SUN_X + oC)) / (10 + depth * 46), 2))
-    const lit = exp(-pow((x - pointerX) / (8 + depth * 36), 2))
-    const on = step(0.994 - (path * 0.6 + lit) * 0.07, h1)
-    const twinkle = pow(max(0, sin(t * (1.2 + h2 * 2.4) + h2 * 40)), 6)
+    const h2 = fract(h1 * 7.137 + 0.371)
+    // bell curves as squared falloffs (cheaper than exp; about the same shape and width)
+    const pu = (x - (SUN_X + oC)) / (10 + depth * 46)
+    const pathFall = max(0, 1 - (pu * pu) / 3)
+    const lu = (x - pointerX) / (8 + depth * 36)
+    const litFall = max(0, 1 - (lu * lu) / 3)
+    const on = step(0.994 - (pathFall * pathFall * 0.6 + litFall * litFall) * 0.07, h1)
+    const s = max(0, sin(t * (1.2 + h2 * 2.4) + h2 * 40))
+    const twinkle = s * s * s * s * s * s
     add = vec3(add + mix(vec3(0.8, 0.84, 1), vec3(1, 0.92, 0.6), day) * on * twinkle * 1.1)
   } else if (src > FIRE_X - 14 && src < FIRE_X + 15 && y > FIRE_Y - 42 && y < FIRE_Y - 4) {
     // heat shimmer over the campfire
@@ -166,34 +173,13 @@ const shore = picture(p => {
 
   // firelight and the crystal's slow breath, where their art now sits on screen; a squared
   // falloff (cheaper than exp, about the same shape) that ends at the glow's radius
-  const flick = 0.78 + 0.22 * sin(t * 9) * sin(t * 5.3 + 1)
   const fv = vec2(x - (FIRE_X + oR), (y - FIRE_Y - 6) * 1.3)
   const fall = max(0, 1 - dot(fv, fv) / 2100)
-  add = vec3(add + vec3(1, 0.55, 0.2) * (fall * fall) * flick * mix(0.5, 0.16, day))
-  const breath = 0.6 + 0.4 * sin(t * 1.3)
+  add = vec3(add + vec3(1, 0.55, 0.2) * (fall * fall) * frameState.y * mix(0.5, 0.16, day))
+  const breath = frameState.z
   const cv = vec2(x - (CRYSTAL_X + oL), y - CRYSTAL_Y)
   const cfall = max(0, 1 - dot(cv, cv) / 6000)
   add = vec3(add + vec3(0.35, 0.65, 1) * (cfall * cfall) * breath * mix(0.32, 0.1, day))
-
-  // /shore-layout: the free area's edges (cyan), the prompt box's edges (magenta), and tints
-  // over the cells each group is placed in (left red, center green, right blue)
-  if (debug.debug > 0.5) {
-    let tint = vec4(0)
-    if (x >= C0 + oC && x < C1 + oC) {
-      tint = vec4(0.2, 1, 0.3, 0.25)
-    } else if (x >= leftEdge + oL && x < L1 + oL) {
-      tint = vec4(1, 0.25, 0.25, 0.25)
-    } else if (x >= R0 + oR && x < rightEdge + oR) {
-      tint = vec4(0.3, 0.45, 1, 0.25)
-    }
-    if (x === floor(freeLeft) || x === floor(freeRight) - 1) {
-      tint = vec4(0, 1, 1, 1)
-    }
-    if (x === floor(pictureLeft + boxL / sC) || x === floor(pictureLeft + boxR / sC)) {
-      tint = vec4(1, 0, 1, 1)
-    }
-    return vec4(mix(base.rgb + add, tint.rgb, tint.a), 1)
-  }
 
   // premultiplied: a replaced pixel is opaque; elsewhere the light adds (alpha 0)
   return replaced > 0.5 ? vec4(base.rgb + add, 1) : vec4(add, 0)
