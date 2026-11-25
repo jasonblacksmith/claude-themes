@@ -41,6 +41,10 @@ const SIGN_X0 = 382
 const SIGN_Y0 = 70
 const SIGN_X1 = 456
 const SIGN_Y1 = 270
+const DESK_X0 = 24
+const DESK_Y0 = 150
+const DESK_X1 = 98
+const DESK_Y1 = 270
 const SEA_TOP = 151
 const SEA_BOTTOM = 211
 const SUN_X = 240
@@ -129,7 +133,8 @@ const shore = picture(p => {
   const pointerX = pointerCount > 0 ? floor(pictureLeft + pointer(0).at.x / sC) : -1000
   const inHero = src >= HERO_X0 && src < HERO_X1 && y >= HERO_Y0 && y < HERO_Y1 ? 1 : 0
   const inSign = src >= SIGN_X0 && src < SIGN_X1 && y >= SIGN_Y0 && y < SIGN_Y1 ? 1 : 0
-  const inSea = y > SEA_TOP && y < SEA_BOTTOM ? 1 - max(inHero, inSign) : 0
+  const inDesk = src >= DESK_X0 && src < DESK_X1 && y >= DESK_Y0 && y < DESK_Y1 ? 1 : 0
+  const inSea = y > SEA_TOP && y < SEA_BOTTOM ? 1 - max(max(inHero, inSign), inDesk) : 0
 
   if (inSea > 0.5 && water(base) > 0.5) {
     // ripple: rows sway sideways by whole cells, more toward the shore

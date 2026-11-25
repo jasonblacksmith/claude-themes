@@ -18,6 +18,7 @@ export const EFFECTS = {
   crystal: [84, 84], // the floating crystal's heart
   heroBox: [190, 160, 290, 232], // hero, sword, scarf and slime: never rippled
   signBox: [382, 70, 456, 270], // the right group's foreground (sign, mushroom, guitars): never rippled
+  deskBox: [24, 150, 98, 270], // the left group's foreground (computer, d20, toys): never rippled
   seaTop: 151,
   seaBottom: 211,
   sunX: 240, // the glitter path's center

@@ -67,3 +67,9 @@ test('effect anchors match the art', () => {
     assert.ok(b[0] >= h[0] && b[1] >= h[1] && b[2] <= h[2] && b[3] <= h[3], `${name} ${b} inside hero box ${h}`)
   }
 })
+
+test('the left group never ripples', () => {
+  const inside = (b, h) => b[0] >= h[0] && b[1] >= h[1] && b[2] <= h[2] && b[3] <= h[3]
+  assert.ok(EFFECTS.deskBox, 'EFFECTS.deskBox exists')
+  for (const name of ['computer', 'toys']) assert.ok(inside(part(name).box, EFFECTS.deskBox), `${name} ${part(name).box} inside the desk box ${EFFECTS.deskBox}`)
+})
