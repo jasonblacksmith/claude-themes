@@ -44,6 +44,9 @@ const SIGN_Y1 = 270
 const SEA_TOP = 151
 const SEA_BOTTOM = 211
 const SUN_X = 240
+// measured in the app: the sidebar (315 px) as a share of the prompt box (646 px)
+const SIDEBAR_PER_BOX = 0.4876161
+const CENTERED_PX = 8
 
 // Set by the mod: 1 while /shore-layout shows the layout view.
 const debug = values({ debug: [0, 1] })
@@ -70,12 +73,16 @@ const shore = picture(p => {
   const bu = vec2(0.5 - (W / 2) * ku.x, 0.5 - (H / 2) * ku.y)
   const toUv = (q: vec2) => vec2(q * ku + bu)
 
-  // the panels, from the prompt box (window points)
+  // the panels, from the prompt box (window points): d = left − right; a shift close to a whole
+  // sidebar is the sidebar alone, a smaller one the sidebar plus a narrower right pane, and a
+  // leftward one a right pane alone (as estimatePanels in art/layout.mjs)
   const boxL = composer.x * size.x
   const boxR = composer.z * size.x
-  const shift = boxR > boxL ? (boxL + boxR) / 2 - size.x / 2 : 0
-  const leftPx = shift > 0 ? min(2 * shift, size.x) : 0
-  const rightPx = shift < 0 ? min(-2 * shift, size.x) : 0
+  const d = boxR > boxL ? boxL + boxR - size.x : 0
+  const sidebar = SIDEBAR_PER_BOX * max(boxR - boxL, 0)
+  const centered = d <= CENTERED_PX && d >= -CENTERED_PX ? 1 : 0
+  const leftPx = centered > 0.5 ? 0 : d >= 0.85 * sidebar ? min(d, size.x) : d > 0 ? sidebar : 0
+  const rightPx = centered > 0.5 ? 0 : d >= 0.85 * sidebar ? 0 : d > 0 ? sidebar - d : min(-d, size.x)
   const freeLeft = pictureLeft + leftPx / sC
   const freeRight = pictureRight - rightPx / sC
 
@@ -98,9 +105,10 @@ const shore = picture(p => {
   if (x >= C0 + oC && x < C1 + oC) {
     src = x - oC
   } else if (x < L1 + oL) {
-    src = x - oL
+    // the left group, or open sea beyond it once a panel has pushed it in
+    src = oL > 0.5 && x < leftEdge + oL ? SL0 + mod(x - lEnd, SL1 - SL0) : x - oL
   } else if (x >= R0 + oR) {
-    src = x - oR
+    src = oR < -0.5 && x >= rightEdge + oR ? SR0 + mod(x - (C1 + oC), SR1 - SR0) : x - oR
   } else if (x < C0 + oC) {
     src = SL0 + mod(x - lEnd, SL1 - SL0)
   } else {

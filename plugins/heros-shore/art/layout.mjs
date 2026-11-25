@@ -29,13 +29,25 @@ const MID = (CENTER[0] + CENTER[1]) / 2
 
 const mod = (a, n) => ((a % n) + n) % n
 
-// The panels' widths in px, from the prompt box, which sits centered in the free area.
-// Only the difference of the two widths can be read, so the shift goes to one side.
+// The sidebar's width as a share of the prompt box's, measured in the desktop app (2026-11-24:
+// sidebar 315 px beside a 646 px box). Both are drawn at fixed sizes, so the share holds at any
+// zoom, and the box tells the shader how wide the sidebar must be.
+export const SIDEBAR_PER_BOX = 315 / 646
+// A box this close to the window's middle is centered: no panels.
+export const CENTERED_PX = 8
+
+// The panels' widths in px, from the prompt box, which sits centered in the free area. The box's
+// shift from the middle gives d = left − right. A shift close to a whole sidebar is the sidebar
+// alone; a smaller rightward shift is the sidebar plus a narrower right pane; a leftward shift is
+// read as a right pane alone (a sidebar with a wider right pane can't be told from it).
 export function estimatePanels(boxLeftPx, boxRightPx, windowPx) {
   if (!(boxRightPx > boxLeftPx)) return { leftPx: 0, rightPx: 0 }
-  const shiftPx = (boxLeftPx + boxRightPx) / 2 - windowPx / 2
-  const side = Math.min(Math.abs(2 * shiftPx), windowPx)
-  return shiftPx > 0 ? { leftPx: side, rightPx: 0 } : { leftPx: 0, rightPx: shiftPx < 0 ? side : 0 }
+  const d = boxLeftPx + boxRightPx - windowPx
+  const sidebar = SIDEBAR_PER_BOX * (boxRightPx - boxLeftPx)
+  if (Math.abs(d) <= CENTERED_PX) return { leftPx: 0, rightPx: 0 }
+  if (d >= 0.85 * sidebar) return { leftPx: Math.min(d, windowPx), rightPx: 0 }
+  if (d > 0) return { leftPx: sidebar, rightPx: sidebar - d }
+  return { leftPx: 0, rightPx: Math.min(-d, windowPx) }
 }
 
 // The free area in scene columns, and the columns the Svg's picture holds ("slice" crop).
@@ -58,15 +70,16 @@ export function placeGroups(freeLeft, freeRight, pictureLeft = VISIBLE[0], pictu
   const lEnd = LEFT[1] + oL
   const rStart = RIGHT[0] + oR
   const oC = rStart - lEnd >= CENTER[1] - CENTER[0] ? Math.round((lEnd + rStart) / 2 - MID) : Math.round((freeLeft + freeRight) / 2 - MID)
-  return { oL, oC, oR }
+  return { oL, oC, oR, leftEdge, rightEdge }
 }
 
 // The scene column to sample for display column x: the center first, then the outer groups
-// (with their bleed), then the seams, repeated from the edge of the group before them.
-export function sourceColumn(x, { oL, oC, oR }) {
+// (with their bleed while they sit at the window's edge; open sea beyond them once a panel
+// pushes them in), then the seams, repeated from the edge of the group before them.
+export function sourceColumn(x, { oL, oC, oR, leftEdge = LEFT[0], rightEdge = RIGHT[1] }) {
   if (x >= CENTER[0] + oC && x < CENTER[1] + oC) return x - oC
-  if (x < LEFT[1] + oL) return x - oL
-  if (x >= RIGHT[0] + oR) return x - oR
+  if (x < LEFT[1] + oL) return oL > 0 && x < leftEdge + oL ? SEAM_L[0] + mod(x - (LEFT[1] + oL), SEAM_L[1] - SEAM_L[0]) : x - oL
+  if (x >= RIGHT[0] + oR) return oR < 0 && x >= rightEdge + oR ? SEAM_R[0] + mod(x - (CENTER[1] + oC), SEAM_R[1] - SEAM_R[0]) : x - oR
   if (x < CENTER[0] + oC) return SEAM_L[0] + mod(x - (LEFT[1] + oL), SEAM_L[1] - SEAM_L[0])
   return SEAM_R[0] + mod(x - (CENTER[1] + oC), SEAM_R[1] - SEAM_R[0])
 }

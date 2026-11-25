@@ -1,12 +1,13 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { CENTER, LEFT, RIGHT, SEAM_L, estimatePanels, freeColumns, placeGroups, sourceColumn } from '../layout.mjs'
+import { CENTER, LEFT, RIGHT, SEAM_L, SEAM_R, estimatePanels, freeColumns, placeGroups, sourceColumn } from '../layout.mjs'
 
-// A prompt box 768 px wide (or narrower when there's no room), centered in the free area.
+// The prompt box as measured in the app: 646 px wide at most, centered in the free area.
+// The sidebar measured 315 px beside it.
 function box(windowPx, leftPx, rightPx) {
   const free = windowPx - leftPx - rightPx
-  const width = Math.min(768, free - 48)
+  const width = Math.min(646, free - 48)
   const center = leftPx + free / 2
   return [center - width / 2, center + width / 2]
 }
@@ -27,7 +28,7 @@ test('identity with no panels', () => {
 })
 
 test('sidebar keeps the left group whole', () => {
-  const { freeLeft, o } = layout(1440, 900, 300, 0)
+  const { freeLeft, o } = layout(1440, 900, 315, 0)
   assert.equal(o.oL, Math.round(freeLeft) - 24)
   const start = Math.round(freeLeft)
   assert.deepEqual(span(start, start + 74).map(x => sourceColumn(x, o)), span(LEFT[0], LEFT[1]))
@@ -54,7 +55,7 @@ test('both panels: center wins', () => {
 })
 
 test('seams repeat', () => {
-  const { o } = layout(1440, 900, 300, 0)
+  const { o } = layout(1440, 900, 315, 0)
   const from = LEFT[1] + o.oL, to = CENTER[0] + o.oC
   assert.ok(to > from)
   for (const x of span(from, to)) {
@@ -65,7 +66,7 @@ test('seams repeat', () => {
 })
 
 test('narrow window stays in the picture', () => {
-  const { freeLeft, freeRight, pictureLeft, pictureRight, o } = layout(1024, 768, 300, 0)
+  const { freeLeft, freeRight, pictureLeft, pictureRight, o } = layout(1024, 768, 315, 0)
   for (const x of span(Math.round(freeLeft), Math.round(freeRight))) {
     const s = sourceColumn(x, o)
     assert.ok(s >= Math.ceil(pictureLeft) && s < Math.floor(pictureRight), `column ${x} samples ${s}`)
@@ -90,5 +91,42 @@ test('integers only', () => {
   for (const [w, h, l, r] of [[1440, 900, 300, 0], [1440, 900, 0, 576], [1333, 777, 211, 377]]) {
     const { o } = layout(w, h, l, r)
     for (const x of span(0, 480)) assert.ok(Number.isInteger(sourceColumn(x, o)))
+  }
+})
+
+const near = (a, b) => Math.abs(a - b) <= 2
+
+test('both panels solved from the sidebar width', () => {
+  const [bl, br] = box(2000, 315, 235)
+  const { leftPx, rightPx } = estimatePanels(bl, br, 2000)
+  assert.ok(near(leftPx, 315) && near(rightPx, 235), `got ${leftPx}, ${rightPx}`)
+})
+
+test('a sidebar alone stays a sidebar', () => {
+  const [bl, br] = box(2000, 315, 0)
+  const { leftPx, rightPx } = estimatePanels(bl, br, 2000)
+  assert.ok(near(leftPx, 315) && rightPx === 0, `got ${leftPx}, ${rightPx}`)
+})
+
+test('a right pane alone stays a right pane', () => {
+  const [bl, br] = box(2000, 0, 317)
+  const { leftPx, rightPx } = estimatePanels(bl, br, 2000)
+  assert.ok(leftPx === 0 && near(rightPx, 317), `got ${leftPx}, ${rightPx}`)
+})
+
+test('a box a few px off center is no panels', () => {
+  assert.deepEqual(estimatePanels(677 + 4, 1323 + 4, 2000), { leftPx: 0, rightPx: 0 })
+})
+
+test('beyond a pushed-in group the edge shows open sea', () => {
+  const { pictureLeft, freeLeft, o } = layout(1440, 900, 315, 0)
+  for (const x of span(Math.ceil(pictureLeft), Math.round(freeLeft))) {
+    const s = sourceColumn(x, o)
+    assert.ok(s >= SEAM_L[0] && s < SEAM_L[1], `column ${x} under the sidebar samples ${s}`)
+  }
+  const r = layout(1440, 900, 0, 576)
+  for (const x of span(Math.round(r.freeRight), Math.floor(r.pictureRight))) {
+    const s = sourceColumn(x, r.o)
+    assert.ok(s >= SEAM_R[0] && s < SEAM_R[1], `column ${x} under the pane samples ${s}`)
   }
 })
