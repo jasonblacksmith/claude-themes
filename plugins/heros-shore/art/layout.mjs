@@ -41,14 +41,29 @@ export const CENTERED_PX = 8
 // shift from the middle gives d = left − right. A shift close to a whole sidebar is the sidebar
 // alone; a smaller rightward shift is the sidebar plus a narrower right pane; a leftward shift is
 // read as a right pane alone (a sidebar with a wider right pane can't be told from it).
+//
+// Split view (two conversations side by side) is read first. The two panes share the space
+// right of the sidebar S equally and the box is centered in its own pane, so its center is
+// S + (W − S)/4 in the left pane or S + 3(W − S)/4 in the right. Solving each for S, a split is
+// one where S comes out as no sidebar or as the sidebar's width. Both panes solve to the same S,
+// so it doesn't matter which conversation the backdrop follows. dividerPx is then the line
+// between the panes (0 when not split).
+export const SPLIT_TOLERANCE_PX = 12
+
 export function estimatePanels(boxLeftPx, boxRightPx, windowPx) {
-  if (!(boxRightPx > boxLeftPx)) return { leftPx: 0, rightPx: 0 }
-  const d = boxLeftPx + boxRightPx - windowPx
+  const none = { leftPx: 0, rightPx: 0, dividerPx: 0 }
+  if (!(boxRightPx > boxLeftPx)) return none
   const sidebar = SIDEBAR_PER_BOX * (boxRightPx - boxLeftPx)
-  if (Math.abs(d) <= CENTERED_PX) return { leftPx: 0, rightPx: 0 }
-  if (d >= 0.85 * sidebar) return { leftPx: Math.min(d, windowPx), rightPx: 0 }
-  if (d > 0) return { leftPx: sidebar, rightPx: sidebar - d }
-  return { leftPx: 0, rightPx: Math.min(-d, windowPx) }
+  const center = (boxLeftPx + boxRightPx) / 2
+  for (const s of [(4 * center - windowPx) / 3, 4 * center - 3 * windowPx]) {
+    const sidebarPx = Math.abs(s) <= SPLIT_TOLERANCE_PX ? 0 : Math.abs(s - sidebar) <= SPLIT_TOLERANCE_PX ? s : -1
+    if (sidebarPx >= 0) return { leftPx: sidebarPx, rightPx: 0, dividerPx: sidebarPx + (windowPx - sidebarPx) / 2 }
+  }
+  const d = boxLeftPx + boxRightPx - windowPx
+  if (Math.abs(d) <= CENTERED_PX) return none
+  if (d >= 0.85 * sidebar) return { leftPx: Math.min(d, windowPx), rightPx: 0, dividerPx: 0 }
+  if (d > 0) return { leftPx: sidebar, rightPx: sidebar - d, dividerPx: 0 }
+  return { leftPx: 0, rightPx: Math.min(-d, windowPx), dividerPx: 0 }
 }
 
 // The free area in scene columns, and the columns the Svg's picture holds ("slice" crop).
@@ -56,21 +71,24 @@ export function freeColumns(boxLeftPx, boxRightPx, windowPx, windowHeightPx) {
   const sC = Math.max(windowPx / W, windowHeightPx / H)
   const pictureLeft = W / 2 - windowPx / (2 * sC)
   const pictureRight = W / 2 + windowPx / (2 * sC)
-  const { leftPx, rightPx } = estimatePanels(boxLeftPx, boxRightPx, windowPx)
-  return { freeLeft: pictureLeft + leftPx / sC, freeRight: pictureRight - rightPx / sC, pictureLeft, pictureRight }
+  const { leftPx, rightPx, dividerPx } = estimatePanels(boxLeftPx, boxRightPx, windowPx)
+  const dividerCol = dividerPx > 0 ? pictureLeft + dividerPx / sC : 0
+  return { freeLeft: pictureLeft + leftPx / sC, freeRight: pictureRight - rightPx / sC, pictureLeft, pictureRight, dividerCol }
 }
 
 // Whole-column offsets for each group. Outer groups pin by their visible edge (columns the
 // picture lacks are lost, as on any narrow window); the center sits between them or, when
-// they leave it too little room, in the middle of the free area, where it wins.
-export function placeGroups(freeLeft, freeRight, pictureLeft = VISIBLE[0], pictureRight = VISIBLE[1]) {
+// they leave it too little room, in the middle of the free area, where it wins. In split view
+// (dividerCol > 0) it centers on the divider between the two conversations instead.
+export function placeGroups(freeLeft, freeRight, pictureLeft = VISIBLE[0], pictureRight = VISIBLE[1], dividerCol = 0) {
   const leftEdge = Math.max(LEFT[0], Math.ceil(pictureLeft))
   const rightEdge = Math.min(RIGHT[1], Math.floor(pictureRight))
   const oL = Math.max(0, Math.round(freeLeft) - leftEdge)
   const oR = Math.min(0, Math.round(freeRight) - rightEdge)
   const lEnd = LEFT[1] + oL
   const rStart = RIGHT[0] + oR
-  const oC = rStart - lEnd >= CENTER[1] - CENTER[0] ? Math.round((lEnd + rStart) / 2 - MID) : Math.round((freeLeft + freeRight) / 2 - MID)
+  const oC = dividerCol > 0 ? Math.round(dividerCol - MID)
+    : rStart - lEnd >= CENTER[1] - CENTER[0] ? Math.round((lEnd + rStart) / 2 - MID) : Math.round((freeLeft + freeRight) / 2 - MID)
   return { oL, oC, oR, leftEdge, rightEdge }
 }
 

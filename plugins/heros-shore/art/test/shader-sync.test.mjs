@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
-import { CENTER, CENTERED_PX, EFFECTS, LEFT, RIGHT, SEAM_L, SEAM_R, SIDEBAR_PER_BOX, VISIBLE } from '../layout.mjs'
+import { CENTER, CENTERED_PX, EFFECTS, LEFT, RIGHT, SEAM_L, SEAM_R, SIDEBAR_PER_BOX, SPLIT_TOLERANCE_PX, VISIBLE } from '../layout.mjs'
 
 // hooks/shore.ts can't import (the shader language allows only 'claude-code/shader'), so it
 // repeats the layout's numbers. This holds the copy to the source.
@@ -16,7 +16,7 @@ test('shader constants match the layout', () => {
     FIRE_X: EFFECTS.fire[0], FIRE_Y: EFFECTS.fire[1], CRYSTAL_X: EFFECTS.crystal[0], CRYSTAL_Y: EFFECTS.crystal[1],
     HERO_X0: EFFECTS.heroBox[0], HERO_Y0: EFFECTS.heroBox[1], HERO_X1: EFFECTS.heroBox[2], HERO_Y1: EFFECTS.heroBox[3],
     SIGN_X0: EFFECTS.signBox[0], SIGN_Y0: EFFECTS.signBox[1], SIGN_X1: EFFECTS.signBox[2], SIGN_Y1: EFFECTS.signBox[3],
-    SEA_TOP: EFFECTS.seaTop, SEA_BOTTOM: EFFECTS.seaBottom, SUN_X: EFFECTS.sunX, CENTERED_PX,
+    SEA_TOP: EFFECTS.seaTop, SEA_BOTTOM: EFFECTS.seaBottom, SUN_X: EFFECTS.sunX, CENTERED_PX, SPLIT_TOLERANCE_PX,
     DESK_X0: EFFECTS.deskBox?.[0], DESK_Y0: EFFECTS.deskBox?.[1], DESK_X1: EFFECTS.deskBox?.[2], DESK_Y1: EFFECTS.deskBox?.[3],
   }
   for (const [name, value] of Object.entries(want)) assert.equal(consts[name], value, `const ${name} in hooks/shore.ts`)

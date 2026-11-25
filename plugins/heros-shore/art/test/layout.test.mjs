@@ -74,8 +74,8 @@ test('narrow window stays in the picture', () => {
 })
 
 test('no prompt box', () => {
-  assert.deepEqual(estimatePanels(0, 0, 1440), { leftPx: 0, rightPx: 0 })
-  assert.deepEqual(estimatePanels(800, 700, 1440), { leftPx: 0, rightPx: 0 })
+  assert.deepEqual(estimatePanels(0, 0, 1440), { leftPx: 0, rightPx: 0, dividerPx: 0 })
+  assert.deepEqual(estimatePanels(800, 700, 1440), { leftPx: 0, rightPx: 0, dividerPx: 0 })
 })
 
 test('tiny free area', () => {
@@ -115,7 +115,7 @@ test('a right pane alone stays a right pane', () => {
 })
 
 test('a box a few px off center is no panels', () => {
-  assert.deepEqual(estimatePanels(677 + 4, 1323 + 4, 2000), { leftPx: 0, rightPx: 0 })
+  assert.deepEqual(estimatePanels(677 + 4, 1323 + 4, 2000), { leftPx: 0, rightPx: 0, dividerPx: 0 })
 })
 
 test('beyond a pushed-in group the edge shows open sea', () => {
@@ -129,4 +129,37 @@ test('beyond a pushed-in group the edge shows open sea', () => {
     const s = sourceColumn(x, r.o)
     assert.ok(s >= SEAM_R[0] && s < SEAM_R[1], `column ${x} under the pane samples ${s}`)
   }
+})
+
+// Split view, as measured: sidebar 0–315, left conversation 315–1158, right 1158–2000, each
+// with its 646 px box centered (413–1060 and 1255–1902).
+test('split view, read from the left conversation', () => {
+  const p = estimatePanels(413, 1060, 2000)
+  assert.ok(near(p.leftPx, 315) && p.rightPx === 0 && near(p.dividerPx, 1158), `got ${JSON.stringify(p)}`)
+})
+
+test('split view, read from the right conversation', () => {
+  const p = estimatePanels(1255, 1902, 2000)
+  assert.ok(near(p.leftPx, 315) && p.rightPx === 0 && near(p.dividerPx, 1158), `got ${JSON.stringify(p)}`)
+})
+
+test('split view with no sidebar', () => {
+  const p = estimatePanels(177, 823, 2000)
+  assert.ok(p.leftPx === 0 && p.rightPx === 0 && near(p.dividerPx, 1000), `got ${JSON.stringify(p)}`)
+})
+
+test('panels alone are not split view', () => {
+  for (const [l, r] of [[0, 0], [315, 0], [315, 235], [0, 317]]) {
+    const [bl, br] = box(2000, l, r)
+    assert.equal(estimatePanels(bl, br, 2000).dividerPx, 0, `panels ${l}, ${r}`)
+  }
+})
+
+test('split view centers the hero group on the divider', () => {
+  const f = freeColumns(413, 1060, 2000, 1110)
+  const o = placeGroups(f.freeLeft, f.freeRight, f.pictureLeft, f.pictureRight, f.dividerCol)
+  const sC = Math.max(2000 / 480, 1110 / 270)
+  const dividerCol = f.pictureLeft + 1158 / sC
+  assert.ok(Math.abs((CENTER[0] + CENTER[1]) / 2 + o.oC - dividerCol) <= 1, `center at ${(CENTER[0] + CENTER[1]) / 2 + o.oC}, divider ${dividerCol}`)
+  assert.ok(o.oL > 0, 'left group pushed out from under the sidebar')
 })

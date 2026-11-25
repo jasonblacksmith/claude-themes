@@ -12,7 +12,7 @@
 //
 // Performance: every scene lookup's position is computed from built-ins (composer, size), never
 // from a buffer read; a buffer-dependent lookup costs the scene its full sharpness.
-import { buffer, clamp, composer, dot, exp, floor, fract, max, min, mix, mod, picture, pointer, pointerCount, pow, scene, shader, sin, size, smoothstep, step, still, time, vec2, vec3, vec4 } from 'claude-code/shader'
+import { abs, buffer, clamp, composer, dot, exp, floor, fract, max, min, mix, mod, picture, pointer, pointerCount, pow, scene, shader, sin, size, smoothstep, step, still, time, vec2, vec3, vec4 } from 'claude-code/shader'
 import type { Buffer } from 'claude-code/shader'
 
 const W = 480
@@ -51,6 +51,7 @@ const SUN_X = 240
 // measured in the app: the sidebar (315 px) as a share of the prompt box (646 px)
 const SIDEBAR_PER_BOX = 0.4876161
 const CENTERED_PX = 8
+const SPLIT_TOLERANCE_PX = 12
 
 // Where scene cell q sits in the Svg's own picture, as 0..1 of the window ("xMidYMid slice").
 const uvAt = (q: vec2) => {
@@ -86,9 +87,18 @@ const shore = picture(p => {
   const boxR = composer.z * size.x
   const d = boxR > boxL ? boxL + boxR - size.x : 0
   const sidebar = SIDEBAR_PER_BOX * max(boxR - boxL, 0)
+  // split view first: the box centered in the left or the right of two equal conversation panes
+  // beside a sidebar S that comes out as none or as the sidebar's width (see estimatePanels)
+  const boxMid = (boxL + boxR) / 2
+  const sA = (4 * boxMid - size.x) / 3
+  const sB = 4 * boxMid - 3 * size.x
+  const fitA = abs(sA) <= SPLIT_TOLERANCE_PX ? 0 : abs(sA - sidebar) <= SPLIT_TOLERANCE_PX ? sA : -1
+  const fitB = abs(sB) <= SPLIT_TOLERANCE_PX ? 0 : abs(sB - sidebar) <= SPLIT_TOLERANCE_PX ? sB : -1
+  const splitS = boxR > boxL ? (fitA >= 0 ? fitA : fitB) : -1
   const centered = d <= CENTERED_PX && d >= -CENTERED_PX ? 1 : 0
-  const leftPx = centered > 0.5 ? 0 : d >= 0.85 * sidebar ? min(d, size.x) : d > 0 ? sidebar : 0
-  const rightPx = centered > 0.5 ? 0 : d >= 0.85 * sidebar ? 0 : d > 0 ? sidebar - d : min(-d, size.x)
+  const leftPx = splitS >= 0 ? splitS : centered > 0.5 ? 0 : d >= 0.85 * sidebar ? min(d, size.x) : d > 0 ? sidebar : 0
+  const rightPx = splitS >= 0 ? 0 : centered > 0.5 ? 0 : d >= 0.85 * sidebar ? 0 : d > 0 ? sidebar - d : min(-d, size.x)
+  const dividerCol = splitS >= 0 ? pictureLeft + (splitS + (size.x - splitS) / 2) / sC : 0
   const freeLeft = pictureLeft + leftPx / sC
   const freeRight = pictureRight - rightPx / sC
 
@@ -101,7 +111,8 @@ const shore = picture(p => {
   const lEnd = L1 + oL
   const rStart = R0 + oR
   const mid = (C0 + C1) / 2
-  const oC = rStart - lEnd >= C1 - C0 ? floor((lEnd + rStart) / 2 - mid + 0.5) : floor((freeLeft + freeRight) / 2 - mid + 0.5)
+  const oC = dividerCol > 0 ? floor(dividerCol - mid + 0.5)
+    : rStart - lEnd >= C1 - C0 ? floor((lEnd + rStart) / 2 - mid + 0.5) : floor((freeLeft + freeRight) / 2 - mid + 0.5)
   const moved = oL > 0.5 || oR < -0.5 || oC > 0.5 || oC < -0.5 ? 1 : 0
 
   // this pixel's display cell, and the scene column it shows
