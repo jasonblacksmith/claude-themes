@@ -1,0 +1,12 @@
+# Written by Claude Code when it loads a plugin
+.claude-plugin/types/
+plugins/*/.claude-plugin/types/
+.mcpb-cache/
+
+# Scene previews made while editing art
+preview.html
+
+.DS_Store
+*.log
+*~
+*.swp
