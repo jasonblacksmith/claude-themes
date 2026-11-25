@@ -1,0 +1,7 @@
+{
+  "name": "sky-realm",
+  "version": "0.1.0",
+  "description": "A 16-bit JRPG sky realm: a floating castle, an airship, a hero with a ridiculous sword, and a slime.",
+  "author": { "name": "jasonblacksmith" },
+  "license": "MIT"
+}

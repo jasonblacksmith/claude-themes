@@ -1,0 +1,16 @@
+{
+  "name": "claude-themes",
+  "owner": { "name": "jasonblacksmith" },
+  "plugins": [
+    {
+      "name": "sky-realm",
+      "source": "./plugins/sky-realm",
+      "description": "A 16-bit JRPG sky realm: a floating castle, an airship, a hero with a ridiculous sword, and a slime."
+    },
+    {
+      "name": "heros-shore",
+      "source": "./plugins/heros-shore",
+      "description": "A 32-bit JRPG coast: a hero with a crystal sword, a slime, a floating castle, a cliffside fortress and a campfire."
+    }
+  ]
+}
