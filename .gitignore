@@ -10,3 +10,6 @@ preview.html
 *.log
 *~
 *.swp
+
+# Plan workspaces (superpowers)
+.superpowers/
