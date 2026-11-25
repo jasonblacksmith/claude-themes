@@ -404,22 +404,63 @@ function flame(seedShift) {
 const flames = [1, 2, 3].map(n => `<g class="fl${n}">${flame(n * 77).svg()}</g>`).join('')
 
 const gear = new Sprite()
-// V guitar, purple
-gear.line(421, 158, 419, 210, '#3a2410', 2)
-for (let y = 168; y < 206; y += 6) gear.set(420, y, '#e8d8b0')
-gear.poly([[417, 150], [425, 150], [424, 160], [418, 160]], '#4a2490')
-gear.line(419, 210, 404, 246, '#6a3ac8', 7); gear.line(420, 210, 437, 244, '#6a3ac8', 7)
-gear.ell(419.5, 212, 5, 4, '#6a3ac8')
-gear.line(416, 212, 402, 244, '#9a6ae8'); gear.line(423, 214, 438, 242, '#4a2490')
-gear.rect(415, 214, 9, 2, '#1a1a1a'); gear.rect(415, 219, 9, 2, '#1a1a1a')
+// Guitars are drawn upright in local coordinates (origin at the bottom of the body, y up is
+// negative), then sheared into a lean as they're placed, which keeps the pixels square.
+const FRETBOARD = '#3a2214', FRET = '#cfc6b2', INLAY = '#f4f0e6', STRING = '#e6e6ee'
+const CHROME = '#d4d8e0', CHROME_D = '#8a90a0', GUARD = '#f2efe6'
+function neck(g, top, bottom) {
+  g.rect(-2, top, 4, bottom - top, FRETBOARD)
+  let gap = 5, n = 0
+  for (let y = bottom - 3; y > top + 2; y -= gap, n++) {
+    g.rect(-2, y, 4, 1, FRET)
+    if ([2, 4, 6, 8].includes(n)) g.set(-1, y + Math.ceil(gap / 2), INLAY)
+    if (n === 11) { g.set(-2, y + 2, INLAY); g.set(1, y + 2, INLAY) }
+    if (n % 3 === 2 && gap > 3) gap--
+  }
+  g.rect(-2, top, 4, 1, '#f0e8d0')
+}
+function shade(g, base, light, dark) {
+  g.recolor((x, y, c) => (c !== base ? null : !g.has(x - 1, y) || !g.has(x, y - 1) ? light : !g.has(x + 1, y) || !g.has(x, y + 1) ? dark : null))
+}
+function strat() {
+  const g = new Sprite(), B = ['#1e3a98', '#2f58c8', '#6a90f0']
+  g.ell(0, -12, 13, 12, B[1]); g.ell(-1, -28, 10.5, 9, B[1])
+  g.ell(-7, -38, 3.5, 7, B[1]); g.ell(6, -35, 3, 5, B[1])
+  for (let y = -46; y < -37; y++) for (let x = -3; x <= 2; x++) g.del(x, y)
+  shade(g, B[1], B[2], B[0])
+  g.poly([[-10, -33], [-3, -37], [4, -37], [5, -9], [-5, -5], [-12, -13]], GUARD)
+  for (const y of [-32, -25, -18]) { g.rect(-3, y, 6, 2, '#ffffff'); g.rect(-3, y + 1, 6, 1, '#d8d4c8') }
+  g.rect(-4, -11, 8, 2, CHROME); g.rect(-4, -10, 8, 1, CHROME_D)
+  for (const [x, y] of [[7, -13], [8, -18], [6, -22]]) g.ell(x, y, 1.4, 1.4, CHROME)
+  g.rect(9, -7, 2, 3, CHROME_D)
+  g.rect(-1, -37, 1, 26, STRING); g.rect(0, -37, 1, 26, STRING)
+  neck(g, -86, -37)
+  g.poly([[-2, -86], [2, -86], [3, -89], [1, -99], [-4, -100], [-4, -93]], '#e8cc96')
+  g.rect(-1, -98, 1, 11, '#c8a868')
+  for (let y = -98; y <= -88; y += 2) g.set(-5, y, CHROME)
+  return g
+}
+function flyingV() {
+  const g = new Sprite(), P = ['#4a2490', '#6a3ac8', '#9a6ae8']
+  g.poly([[-5, -47], [5, -47], [22, -2], [13, 1], [0, -24], [-13, 1], [-22, -2]], P[1])
+  shade(g, P[1], P[2], P[0])
+  g.poly([[-5, -46], [5, -46], [7, -32], [0, -24], [-7, -32]], GUARD)
+  for (const y of [-44, -36]) {
+    g.rect(-4, y, 8, 4, '#1c1c22')
+    for (let x = -3; x <= 2; x++) { g.set(x, y + 1, CHROME_D); g.set(x, y + 2, CHROME_D) }
+  }
+  g.rect(-4, -30, 8, 2, CHROME); g.rect(-3, -27, 6, 1, CHROME_D)
+  for (const [x, y] of [[12, -9], [15, -5], [10, -4]]) g.ell(x, y, 1.4, 1.4, '#e8c040')
+  g.rect(-1, -47, 1, 18, STRING); g.rect(0, -47, 1, 18, STRING)
+  neck(g, -94, -47)
+  g.poly([[-2, -94], [2, -94], [6, -104], [0, -100], [-6, -104]], P[1])
+  for (const [x, y] of [[-4, -98], [-5, -100], [-6, -102]]) { g.set(x - 1, y, CHROME); g.set(-x, y, CHROME) }
+  return g
+}
+function place(src, bx, by, lean) { src.each((x, y, c) => gear.set(bx + x + Math.round(-y * lean), by + y, c)) }
+place(flyingV(), 412, 236, 0.08)
 gear.outline('#1e0e3a')
-// blue guitar
-gear.line(446, 156, 442, 210, '#5a3a1a', 2)
-gear.poly([[444, 150], [450, 150], [449, 160], [445, 160]], '#d8d0c0')
-gear.ell(441, 226, 11, 15, null, (x, y, dx, dy) => gear.set(x, y, dx * -0.5 - dy * 0.5 > 0.35 ? '#5a8ae8' : dx > 0.45 ? '#1e3a98' : '#2f58c8'))
-gear.ell(434, 212, 3.5, 5, '#2f58c8'); gear.ell(449, 213, 3, 4, '#2f58c8')
-gear.poly([[436, 220], [446, 218], [448, 234], [438, 236]], '#eeeae0')
-gear.rect(438, 222, 7, 1, '#1a1a1a'); gear.rect(438, 227, 7, 1, '#1a1a1a'); gear.rect(439, 232, 7, 1, '#1a1a1a')
+place(strat(), 441, 234, 0.13)
 gear.outline('#0e1a4a')
 // amp with a music note
 gear.rect(452, 222, 28, 26, '#262428'); gear.rect(452, 222, 28, 3, '#3e3a40'); gear.rect(455, 227, 22, 18, '#141216')
