@@ -12,7 +12,7 @@
 //
 // Performance: every scene lookup's position is computed from built-ins (composer, size), never
 // from a buffer read; a buffer-dependent lookup costs the scene its full sharpness.
-import { buffer, clamp, composer, dot, exp, floor, fract, max, min, mix, mod, picture, pointer, pointerCount, pow, scene, shader, sin, size, smoothstep, step, still, time, vec2, vec3, vec4 } from 'claude-code/shader'
+import { buffer, clamp, composer, dot, exp, floor, fract, max, min, mix, mod, picture, pointer, pointerCount, pow, scene, shader, sin, size, smoothstep, step, still, time, values, vec2, vec3, vec4 } from 'claude-code/shader'
 import type { Buffer } from 'claude-code/shader'
 
 const W = 480
@@ -44,6 +44,9 @@ const SIGN_Y1 = 270
 const SEA_TOP = 151
 const SEA_BOTTOM = 211
 const SUN_X = 240
+
+// Set by the mod: 1 while /shore-layout shows the layout view.
+const debug = values({ debug: [0, 1] })
 
 // Where scene cell q sits in the Svg's own picture, as 0..1 of the window ("xMidYMid slice").
 const uvAt = (q: vec2) => {
@@ -158,6 +161,26 @@ const shore = picture(p => {
   const cv = vec2(x - (CRYSTAL_X + oL), y - CRYSTAL_Y)
   const cfall = max(0, 1 - dot(cv, cv) / 6000)
   add = vec3(add + vec3(0.35, 0.65, 1) * (cfall * cfall) * breath * mix(0.32, 0.1, day))
+
+  // /shore-layout: the free area's edges (cyan), the prompt box's edges (magenta), and tints
+  // over the cells each group is placed in (left red, center green, right blue)
+  if (debug.debug > 0.5) {
+    let tint = vec4(0)
+    if (x >= C0 + oC && x < C1 + oC) {
+      tint = vec4(0.2, 1, 0.3, 0.25)
+    } else if (x >= leftEdge + oL && x < L1 + oL) {
+      tint = vec4(1, 0.25, 0.25, 0.25)
+    } else if (x >= R0 + oR && x < rightEdge + oR) {
+      tint = vec4(0.3, 0.45, 1, 0.25)
+    }
+    if (x === floor(freeLeft) || x === floor(freeRight) - 1) {
+      tint = vec4(0, 1, 1, 1)
+    }
+    if (x === floor(pictureLeft + boxL / sC) || x === floor(pictureLeft + boxR / sC)) {
+      tint = vec4(1, 0, 1, 1)
+    }
+    return vec4(mix(base.rgb + add, tint.rgb, tint.a), 1)
+  }
 
   // premultiplied: a replaced pixel is opaque; elsewhere the light adds (alpha 0)
   return replaced > 0.5 ? vec4(base.rgb + add, 1) : vec4(add, 0)

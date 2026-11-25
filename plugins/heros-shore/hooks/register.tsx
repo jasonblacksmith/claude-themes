@@ -12,8 +12,16 @@ const LOOK: ThemeSetArgs = {
   backdrop: { scene: 'heros-shore', glass: { blur: 3, opacity: 0.62 } },
 }
 
+// /shore-layout draws the shader's view of the layout over the scene, for tuning. A module
+// variable is enough: a reload turning it off again is fine for a debugging aid.
+let showLayout = false
+
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
+    await $.command.register({
+      name: 'shore-layout',
+      description: "Show or hide how Hero's Shore sees the panels and places its art",
+    })
     const unpainted = problems.find(line => line.startsWith("Desktop won't paint"))
 
     if (unpainted !== undefined) {
@@ -30,6 +38,17 @@ export const register: Register = on => {
     return next(e)
   })
 
+  on('command.run', { command: 'shore-layout' }, async $ => {
+    showLayout = !showLayout
+    $.ui.invalidate('ui.render')
+
+    return {
+      text: showLayout
+        ? 'Layout view on. Cyan lines: where the scene thinks the free area starts and ends. Magenta lines: the prompt box. Red, green and blue tints: where the left, center and right art is placed. Run /shore-layout again to hide it.'
+        : 'Layout view off.',
+    }
+  })
+
   on('ui.render', { component: 'Backdrop' }, ($, e, next) => {
     if (e.surface !== 'desktop' && e.surface !== 'mobile') {
       return next(e)
@@ -40,7 +59,7 @@ export const register: Register = on => {
     // The shader (./shore.ts) ripples the sea, adds glints and firelight on desktop. Where it
     // can't play (mobile, Reduce Motion, a slow GPU) the Svg shows alone, already finished.
     return (
-      <Shader module="./shore.ts">
+      <Shader module="./shore.ts" values={{ debug: showLayout ? 1 : 0 }}>
         <Svg
           source={SCENE}
           alt="A pixel-art coast: a hero with a glowing crystal sword and a blue slime look out over the sea, beside a palm tree, a floating crystal, a retro computer, a floating castle with waterfalls, a cliffside fortress, a mushroom guide by a signpost, guitars and a campfire"
