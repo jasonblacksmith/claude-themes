@@ -7,7 +7,7 @@ for dark mode.
 | Theme | Look |
 |---|---|
 | **sky-realm** | 16-bit. A hero raising a sword twice his height, a hopping blue slime, an airship with a pink stowaway slime, and a floating castle with a waterfall. Day sky or starry night; blue menu-window colors. |
-| **heros-shore** | 32-bit. A coast at golden hour or by moonlight: a hero with a glowing crystal sword, a slime, a palm with signposts, a floating crystal, a retro computer, a floating castle, a cliffside fortress, a mushroom guide, guitars and a campfire. Sand-and-sea colors by day, moonlit indigo by night. On desktop a GPU shader ripples the sea, scatters glints along the sun or moon path and under your pointer, and adds heat shimmer and firelight. |
+| **heros-shore** | 32-bit. A coast at golden hour or by moonlight: a hero with a glowing crystal sword, a slime, a palm with signposts, a floating crystal, a retro computer, a floating castle, a cliffside fortress, a mushroom guide, guitars and a campfire. Sand-and-sea colors by day, moonlit indigo by night. On desktop a GPU shader ripples the sea, scatters glints along the sun or moon path and under your pointer, and adds heat shimmer and firelight. It also notices the left sidebar and refits the scene into the space beside it. |
 
 Install one theme at a time: a session shows a single theme, so with two installed, whichever
 loads last wins.

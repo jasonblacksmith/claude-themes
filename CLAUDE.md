@@ -38,6 +38,11 @@ come from the `CLAUDE.md` above this repo; this file adds what is specific here.
   `slice`) and move things in whole cells so the pixel art stays crisp.
 - `claude plugin validate` prints each shader's frame cost; keep a weak GPU near 10 ms at 30
   fps. The browser can't play these shaders, so check them in the desktop app.
+- Watch the "sharpness" figure, not only the ms: when a shader is too heavy the app renders it
+  below full resolution, which blurs pixel art. A scene lookup whose position depends on a
+  buffer read costs far more than one computed from built-ins like `composer`.
+- No API says whether the left sidebar is open. `composer` (the prompt box) is centered in the
+  free area, so its center's shift right of 0.5 is half the sidebar's width.
 
 ## Rules for colors
 
