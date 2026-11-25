@@ -7,7 +7,7 @@ for dark mode.
 | Theme | Look |
 |---|---|
 | **sky-realm** | 16-bit. A hero raising a sword twice his height, a hopping blue slime, an airship with a pink stowaway slime, and a floating castle with a waterfall. Day sky or starry night; blue menu-window colors. |
-| **heros-shore** | 32-bit. A coast at golden hour or by moonlight: a hero with a glowing crystal sword, a slime, a palm with signposts, a floating crystal, a retro computer, a floating castle, a cliffside fortress, a mushroom guide, guitars and a campfire. Sand-and-sea colors by day, moonlit indigo by night. |
+| **heros-shore** | 32-bit. A coast at golden hour or by moonlight: a hero with a glowing crystal sword, a slime, a palm with signposts, a floating crystal, a retro computer, a floating castle, a cliffside fortress, a mushroom guide, guitars and a campfire. Sand-and-sea colors by day, moonlit indigo by night. On desktop a GPU shader ripples the sea, scatters glints along the sun or moon path and under your pointer, and adds heat shimmer and firelight. |
 
 Install one theme at a time: a session shows a single theme, so with two installed, whichever
 loads last wins.
@@ -43,6 +43,9 @@ Each theme is a hooks-module plugin under `plugins/<name>/`:
   Claude Code) expands them into the full design-system palette.
 - `hooks/scene.ts` is the generated SVG scene. Don't edit it by hand.
 - `art/gen.mjs` draws the scene: sprites on a pixel grid, compiled to SVG paths.
+- `hooks/shore.ts` (heros-shore only) is a shader in Claude Code's shader language, played on
+  the GPU over the scene. Where it can't play (mobile, Reduce Motion, a slow GPU) the plain
+  scene shows, so the SVG is always a finished picture on its own.
 
 To change a scene, edit its `art/gen.mjs` and regenerate from the plugin folder:
 

@@ -29,6 +29,16 @@ come from the `CLAUDE.md` above this repo; this file adds what is specific here.
 - Original art only: no recognizable characters, logos or trademarked designs from games,
   shows or brands. Riffs on genre tropes are fine.
 
+## Rules for shaders
+
+- A shader file (`hooks/<name>.ts`, named in `<Shader module="./<name>.ts">`) is TypeScript
+  against `claude-code/shader`, never GLSL. Its rules and built-ins are in the types Claude
+  Code writes to `.claude-plugin/types/claude-code/index.d.ts`.
+- It samples the scene through `scene.sample(uv)`. Map to scene cells (480x270, drawn with
+  `slice`) and move things in whole cells so the pixel art stays crisp.
+- `claude plugin validate` prints each shader's frame cost; keep a weak GPU near 10 ms at 30
+  fps. The browser can't play these shaders, so check them in the desktop app.
+
 ## Rules for colors
 
 - `hooks/make-colors.js` and `.d.ts` are copied unchanged from Claude Code's plugin-authoring

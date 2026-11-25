@@ -35,14 +35,18 @@ export const register: Register = on => {
       return next(e)
     }
 
-    const { Svg } = $.ui.resolve(e)
+    const { Shader, Svg } = $.ui.resolve(e)
 
+    // The shader (./shore.ts) ripples the sea, adds glints and firelight on desktop. Where it
+    // can't play (mobile, Reduce Motion, a slow GPU) the Svg shows alone, already finished.
     return (
-      <Svg
-        source={SCENE}
-        alt="A pixel-art coast: a hero with a glowing crystal sword and a blue slime look out over the sea, beside a palm tree, a floating crystal, a retro computer, a floating castle with waterfalls, a cliffside fortress, a mushroom guide by a signpost, guitars and a campfire"
-        isInteractive
-      />
+      <Shader module="./shore.ts">
+        <Svg
+          source={SCENE}
+          alt="A pixel-art coast: a hero with a glowing crystal sword and a blue slime look out over the sea, beside a palm tree, a floating crystal, a retro computer, a floating castle with waterfalls, a cliffside fortress, a mushroom guide by a signpost, guitars and a campfire"
+          isInteractive
+        />
+      </Shader>
     )
   })
 }
