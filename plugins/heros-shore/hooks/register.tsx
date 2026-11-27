@@ -37,8 +37,9 @@ export const register: Register = on => {
 
     const { Shader, Svg } = $.ui.resolve(e)
 
-    // The shader (./shore.ts) ripples the sea, adds glints and firelight on desktop. Where it
-    // can't play (mobile, Reduce Motion, a slow GPU) the Svg shows alone, already finished.
+    // The shader (./shore.ts) keeps the art clear of the app's panels, ripples the sea and adds
+    // glints and firelight on desktop. Where it can't play (mobile, Reduce Motion, a slow GPU)
+    // the Svg shows alone, already a finished scene.
     return (
       <Shader module="./shore.ts">
         <Svg

@@ -12,6 +12,8 @@ come from the `CLAUDE.md` above this repo; this file adds what is specific here.
 ## Commands
 
 - Regenerate a scene, from the plugin folder: `node art/gen.mjs hooks/scene.ts preview.html`
+- Test heros-shore's layout and scene: `node --test "plugins/heros-shore/art/test/*.test.mjs"`
+  (a glob: on Windows `node --test` with a folder fails).
 - Validate a theme: `claude plugin validate plugins/<name>`. Use the Claude Code that the
   desktop app runs. An older `claude` on PATH does not know the `modules` hooks format.
 - Develop live: load the plugin folder with `claude --plugin-dir plugins/<name>`, or build it
@@ -38,6 +40,28 @@ come from the `CLAUDE.md` above this repo; this file adds what is specific here.
   `slice`) and move things in whole cells so the pixel art stays crisp.
 - `claude plugin validate` prints each shader's frame cost; keep a weak GPU near 10 ms at 30
   fps. The browser can't play these shaders, so check them in the desktop app.
+- Watch the "sharpness" figure, not only the ms: when a shader is too heavy the app renders it
+  below full resolution, which blurs pixel art. A scene lookup whose position depends on a
+  buffer read costs far more than one computed from built-ins like `composer`.
+- Values that set colors only (day/night, flicker, breath) can come from a once-a-frame buffer;
+  values that set where the scene is sampled must not.
+
+## heros-shore's anchored layout
+
+- The scene is five column ranges: left group | seam | center group | seam | right group.
+  `art/layout.mjs` is the single source of those ranges, the effect anchors (`EFFECTS`), the
+  group-placement math and the panel estimate. `gen.mjs` draws art at its numbers.
+- `hooks/shore.ts` can't import, so it repeats the numbers and the math.
+  `art/test/shader-sync.test.mjs` fails when the copy drifts: change both together.
+- Every prop belongs to one group and stays inside its columns (`scene.test.mjs` checks the
+  boxes). Seams hold only filler that tiles with the seam's width (92, a multiple of the sky
+  dither's 4).
+- Anything bluish in the sea's rows (151 to 211) ripples unless it sits in an `EFFECTS` box
+  (`heroBox`, `signBox`, `deskBox`). A new prop there needs a box.
+- No API says which panels are open. `composer` (the prompt box) is centered in the free
+  area, so its shift gives left minus right. The sidebar is a fixed share of the box's width
+  (`SIDEBAR_PER_BOX`, measured 315/646), which tells a sidebar alone from a sidebar plus a
+  narrower right pane. A sidebar plus a wider right pane still reads as a right pane alone.
 
 ## Rules for colors
 
